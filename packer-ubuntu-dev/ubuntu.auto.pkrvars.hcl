@@ -1,0 +1,9 @@
+iso_path     = "C:/ISOs/ubuntu-24.04.3-live-server-amd64.iso"
+packer_private_key_path = "C:/Users/rarescraciu/.ssh/keys/packer_ed25519"
+vm_name      = "ubuntu-dev-golden"
+switch_name  = "Default Switch"
+cpus         = 6
+memory_mb    = 8192
+disk_size_mb = 122880
+ssh_username = "devops"
+output_dir   = "output-hyperv"

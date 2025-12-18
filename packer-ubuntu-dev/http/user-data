@@ -1,0 +1,35 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ubuntu-dev
+    username: devops
+    password: "$6$censored$censored"
+  ssh:
+    install-server: true
+    allow-pw: false
+  user-data:
+    users:
+      - name: devops
+        groups: [adm, sudo]
+        shell: /bin/bash
+        sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+        ssh_authorized_keys:
+          - "ssh-ed25519 <insert_public_key_here> packer-build"
+  storage:
+    layout:
+      name: direct
+  packages:
+    - openssh-server
+    - linux-cloud-tools-virtual
+    - linux-tools-virtual
+    - qemu-guest-agent   # keep only if you also build for KVM/QEMU
+    - ca-certificates
+    - curl
+    - gnupg
+    - ufw
+    - fail2ban
+  late-commands:
+    - curtin in-target --target=/target -- sh -c "systemctl list-unit-files | grep -E '^(ssh|sshd)\.service' || true"
+    - curtin in-target --target=/target -- systemctl enable qemu-guest-agent
+
