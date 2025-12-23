@@ -1,6 +1,13 @@
 
-$vmName = "ubuntu-dev-practice-01"
+$vmName = "ubuntu-dev-practice-02"
 $pubKey = (Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" -Raw).Trim()
+$cpuCount = 3
+$memSize = 4GB
+
+if (Get-VM -Name $vmName -ErrorAction SilentlyContinue) {
+    throw "VM '$vmName' already exists. Aborting to avoid conflicts."
+}
+
 
 $ciDir = "C:\code\packer\create-vm\cloud-init"
 New-Item -ItemType Directory -Force $ciDir | Out-Null
@@ -49,12 +56,14 @@ Copy-Item $golden $vmDisk
 New-VM `
   -Name $vmName `
   -Generation 2 `
-  -MemoryStartupBytes 12GB `
+  -MemoryStartupBytes $memSize `
   -VHDPath $vmDisk `
   -SwitchName "Default Switch"
 
 Add-VMDvdDrive -VMName $vmName -Path "$ciDir\cidata.iso"
 
+Set-VMProcessor -VMName $vmName -Count $cpuCount
+Set-VMProcessor -VMName $vmName -Maximum 100 -Reserve 10
 Set-VMFirmware -VMName $vmName -EnableSecureBoot Off
 
 Start-VM $vmName
