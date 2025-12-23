@@ -1,5 +1,5 @@
 
-$vmName = "ubuntu-dev-03"
+$vmName = "ubuntu-dev-practice-01"
 $pubKey = (Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" -Raw).Trim()
 
 $ciDir = "C:\code\packer\create-vm\cloud-init"
@@ -39,11 +39,12 @@ if (-not (Test-Path "$ciDir\cidata.iso")) {
 
 
 $golden = "C:\Images\Golden\ubuntu-dev-golden-2025.12.vhdx"
-$vmDisk = "C:\Images\Current\$vmName\disk.vhdx"
-New-Item -ItemType Directory -Force $vmDisk | Out-Null
+$vmDir  = "C:\Images\Current\$vmName"
+$vmDisk = "$vmDir\disk.vhdx"
 
-New-Item -ItemType Directory -Force (Split-Path $vmDisk) | Out-Null
+New-Item -ItemType Directory -Force $vmDir | Out-Null
 Copy-Item $golden $vmDisk
+
 
 New-VM `
   -Name $vmName `
