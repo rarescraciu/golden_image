@@ -1,5 +1,5 @@
 
-$vmName = "ubuntu-dev-01"
+$vmName = "ubuntu-dev-03"
 $pubKey = (Get-Content "$env:USERPROFILE\.ssh\id_ed25519.pub" -Raw).Trim()
 
 $ciDir = "C:\code\packer\create-vm\cloud-init"
@@ -39,13 +39,14 @@ if (-not (Test-Path "$ciDir\cidata.iso")) {
 
 
 $golden = "C:\Images\Golden\ubuntu-dev-golden-2025.12.vhdx"
-$vmDisk = "C:\Images\Current\ubuntu-dev-01\disk.vhdx"
+$vmDisk = "C:\Images\Current\$vmName\disk.vhdx"
+New-Item -ItemType Directory -Force $vmDisk | Out-Null
 
 New-Item -ItemType Directory -Force (Split-Path $vmDisk) | Out-Null
 Copy-Item $golden $vmDisk
 
 New-VM `
-  -Name "ubuntu-dev-01" `
+  -Name $vmName `
   -Generation 2 `
   -MemoryStartupBytes 12GB `
   -VHDPath $vmDisk `
@@ -57,3 +58,30 @@ Set-VMFirmware -VMName $vmName -EnableSecureBoot Off
 
 Start-VM $vmName
 
+$ip = $null
+for ($i = 0; $i -lt 120 -and -not $ip; $i++) {
+    $ip = Get-VMNetworkAdapter -VMName $vmName |
+        Select-Object -ExpandProperty IPAddresses |
+        Where-Object { $_ -like "*.*" } |
+        Select-Object -First 1
+    Start-Sleep 2
+}
+if (-not $ip) {
+    throw "Failed to get IP address of VM $vmName"
+}
+echo "VM is starting up. Waiting for TCP connection to become available at $ip ..."
+# Wait for SSH
+while (-not (Test-NetConnection -ComputerName $ip -Port 22 -InformationLevel Quiet)) {
+    Start-Sleep 5
+}
+
+$dvd = Get-VMDvdDrive -VMName $vmName -ErrorAction SilentlyContinue
+if ($dvd) {
+    Remove-VMDvdDrive -VMName $vmName `
+        -ControllerNumber $dvd.ControllerNumber `
+        -ControllerLocation $dvd.ControllerLocation
+}
+
+Start-Sleep 5
+# clean up cloud-init files
+Remove-Item $ciDir -Recurse -Force
